@@ -1,0 +1,42 @@
+[
+  {
+    "business_name": "Smile Dental Care",
+    "location": "Downtown, San Francisco",
+    "email": "info@smiledental.com",
+    "phone": "(415) 555-0123",
+    "website": "https://www.smiledental.com",
+    "contact_person": "Dr. Sarah Johnson"
+  },
+  {
+    "business_name": "Green Valley Plumbing",
+    "location": "Oakland, CA",
+    "email": "contact@greenvalleyplumbing.com",
+    "phone": "(510) 555-0456",
+    "website": "https://www.greenvalleyplumbing.com",
+    "contact_person": "Mike Rodriguez"
+  },
+  {
+    "business_name": "The Pasta House",
+    "location": "North Beach, SF",
+    "email": "hello@pastahouse.com",
+    "phone": "(415) 555-0789",
+    "website": "https://www.pastahouse.com",
+    "contact_person": "Maria Rossi"
+  },
+  {
+    "business_name": "Elite Fitness Gym",
+    "location": "Mission District, SF",
+    "email": "info@elitefitness.com",
+    "phone": "(415) 555-0321",
+    "website": "https://www.elitefitness.com",
+    "contact_person": "James Chen"
+  },
+  {
+    "business_name": "Bright Smile Orthodontics",
+    "location": "Palo Alto, CA",
+    "email": "appointments@brightsmile.com",
+    "phone": "(650) 555-0654",
+    "website": "https://www.brightsmile.com",
+    "contact_person": "Dr. Emily Wong"
+  }
+]
