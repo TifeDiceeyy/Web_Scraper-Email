@@ -13,20 +13,25 @@ load_dotenv()
 
 def scrape_instagram_profiles(search_query, max_results=20):
     """
-    Scrape Instagram profiles based on search query
+    Scrape Instagram profiles based on hashtag search
+
+    Note: Instagram doesn't have a direct profile search API.
+    This function searches for posts by hashtag and extracts profile info from posters.
 
     Args:
-        search_query: Search term (e.g., "coffee shop san francisco")
-        max_results: Maximum number of profiles to scrape
+        search_query: Search term (e.g., "coffeesf" or "sanfranciscocoffee")
+                     Will be converted to hashtag format
+        max_results: Maximum number of posts to scrape (profiles extracted from these)
 
     Returns:
         list: List of Instagram profile dictionaries
     """
 
-    print("\n📸 INSTAGRAM PROFILE SCRAPER")
+    print("\n📸 INSTAGRAM PROFILE SCRAPER (Hashtag-based)")
     print("=" * 60)
-    print(f"🔍 Searching: {search_query}")
-    print(f"📊 Max results: {max_results}")
+    print(f"🔍 Searching hashtag: #{search_query.replace(' ', '')}")
+    print(f"📊 Max posts to scrape: {max_results}")
+    print("⚠️  Note: Extracts profiles from hashtag posts")
 
     try:
         api_token = os.getenv('APIFY_TOKEN')
@@ -36,37 +41,55 @@ def scrape_instagram_profiles(search_query, max_results=20):
 
         client = ApifyClient(api_token)
 
+        # Convert search query to hashtag format
+        hashtag = search_query.replace(" ", "").lower()
+
         run_input = {
-            "search": search_query,
+            "hashtags": [hashtag],
             "resultsLimit": max_results,
-            "searchType": "user",
-            "searchLimit": max_results,
         }
 
-        print("\n⏳ Running Apify Instagram Scraper...")
-        run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
+        print(f"\n⏳ Running Apify Instagram Hashtag Scraper for #{hashtag}...")
+        run = client.actor("apify/instagram-hashtag-scraper").call(run_input=run_input)
 
-        print("✅ Scraping complete! Processing profiles...")
+        print("✅ Scraping complete! Extracting unique profiles...")
 
+        # Extract unique profiles from posts
+        seen_usernames = set()
         profiles = []
+
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            username = item.get('ownerUsername', '')
+
+            # Skip duplicates
+            if username in seen_usernames or not username:
+                continue
+
+            seen_usernames.add(username)
+
             profiles.append({
-                'name': item.get('fullName', ''),
-                'username': item.get('username', ''),
-                'bio': item.get('biography', ''),
-                'website': item.get('externalUrl', ''),
-                'email': item.get('businessEmail', ''),
-                'phone': item.get('businessPhoneNumber', ''),
-                'followers': item.get('followersCount', 0),
+                'name': item.get('ownerFullName', ''),
+                'username': username,
+                'bio': '',  # Not available in hashtag scraper
+                'website': '',  # Not available in hashtag scraper
+                'email': '',  # Not available in hashtag scraper
+                'phone': '',  # Not available in hashtag scraper
+                'followers': 0,  # Not available in hashtag scraper
                 'platform': 'instagram',
-                'profile_url': f"https://instagram.com/{item.get('username', '')}",
+                'profile_url': f"https://instagram.com/{username}",
+                'post_caption': item.get('caption', '')[:100],  # First 100 chars of their post
             })
 
-        print(f"\n✅ Found {len(profiles)} Instagram profiles!")
+            if len(profiles) >= max_results:
+                break
+
+        print(f"\n✅ Found {len(profiles)} unique Instagram profiles!")
+        print(f"💡 Tip: Use 'Enrich Contact Info' to get full profile details")
         return profiles
 
     except Exception as e:
         print(f"\n❌ Error scraping Instagram: {e}")
+        print("💡 Try: Using a single-word hashtag like 'coffee' or 'coffeeshop'")
         return []
 
 

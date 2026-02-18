@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 # Add tools directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../"))
 
-from tools.track_responses import track_responses
+from tools.track_responses import track_email_responses
 from app.models import Campaign, UserSettings
 from app.core.security import decrypt_value
 
@@ -49,7 +49,7 @@ class TrackingService:
 
         try:
             # Run tracking
-            track_responses()
+            track_email_responses()
 
             # TODO: Return detailed tracking results
             return {

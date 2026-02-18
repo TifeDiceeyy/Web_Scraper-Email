@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 # Add tools directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../"))
 
-from tools.send_emails import send_emails
+from tools.send_emails import send_approved_emails
 from app.models import Campaign, UserSettings
 from app.core.security import decrypt_value
 
@@ -57,7 +57,7 @@ class GmailService:
         try:
             # The send_emails tool will read from sheet and send
             # TODO: Refactor send_emails to accept businesses list directly
-            send_emails()
+            send_approved_emails()
 
             return {
                 "sent": len(approved_businesses),

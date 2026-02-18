@@ -43,6 +43,7 @@ beautifulsoup4==4.12.3
 selenium==4.17.2
 webdriver-manager==4.0.1
 requests==2.31.0
+apify-client==1.7.1
 
 # Utilities
 aiofiles==23.2.1

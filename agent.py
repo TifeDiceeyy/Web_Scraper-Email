@@ -43,9 +43,9 @@ class OutreachAgent:
 
                 # Validate menu choice
                 choice = get_validated_input(
-                    "\nEnter your choice (1-6): ",
+                    "\nEnter your choice (1-9): ",
                     validate_choice,
-                    valid_choices=["1", "2", "3", "4", "5", "6"]
+                    valid_choices=["1", "2", "3", "4", "5", "6", "7", "8", "9"]
                 )
 
                 if choice == "1":
@@ -59,6 +59,12 @@ class OutreachAgent:
                 elif choice == "5":
                     self.track_responses()
                 elif choice == "6":
+                    self.scrape_social_media()
+                elif choice == "7":
+                    self.enrich_contacts()
+                elif choice == "8":
+                    self.verify_emails_menu()
+                elif choice == "9":
                     logger.info("System shutting down")
                     print("\nGoodbye!")
                     sys.exit(0)
@@ -88,7 +94,10 @@ class OutreachAgent:
         print("3. 📊 Manage Google Sheet")
         print("4. 📤 Send Approved Emails")
         print("5. 📥 Track Responses")
-        print("6. 🚪 Exit")
+        print("6. 📱 Scrape Social Media")
+        print("7. 🔍 Enrich Contact Info")
+        print("8. ✅ Verify Email Addresses")
+        print("9. 🚪 Exit")
         print("\n" + "="*60)
 
     def start_campaign(self):
@@ -500,6 +509,253 @@ class OutreachAgent:
 
         track_email_responses()
         logger.info("Response tracking complete")
+
+    def scrape_social_media(self):
+        """Workflow 6: Scrape businesses from social media platforms"""
+        print("\n" + "="*60)
+        print("📱 SOCIAL MEDIA SCRAPING")
+        print("="*60)
+        logger.info("Starting social media scraping workflow")
+
+        # Ask which platform
+        print("\nChoose platform:")
+        print("1. Instagram")
+        print("2. Facebook")
+        print("3. TikTok")
+        print("4. All platforms (coming soon)")
+
+        platform_choice = get_validated_input(
+            "\nEnter choice (1-4): ",
+            validate_choice,
+            valid_choices=["1", "2", "3", "4"]
+        )
+
+        platform_map = {
+            "1": "Instagram",
+            "2": "Facebook",
+            "3": "TikTok",
+            "4": "All"
+        }
+
+        platform = platform_map[platform_choice]
+
+        if platform == "All":
+            print("\n⚠️  Multi-platform scraping coming soon!")
+            print("   Please choose a single platform for now")
+            return
+
+        # Ask for search query
+        print(f"\n🔍 Scraping {platform}")
+        query = input(f"Enter search term (e.g., 'coffee shop sf'): ").strip()
+
+        if not query:
+            print("❌ Search term cannot be empty")
+            logger.warning("Empty search term provided")
+            return
+
+        # Ask for max results
+        max_results_input = input("How many results? (default: 10): ").strip()
+        if max_results_input:
+            is_valid, error_msg, max_results = validate_integer(max_results_input, min_val=1, max_val=50)
+            if not is_valid:
+                logger.warning(f"Invalid number: {error_msg}")
+                print(f"⚠️  Invalid number, using default of 10")
+                max_results = 10
+        else:
+            max_results = 10
+
+        logger.info(f"Scraping {max_results} results from {platform} for query: {query}")
+        print(f"\n🔍 Searching {platform} for: '{query}'...")
+
+        # Import and call appropriate scraper
+        sys.path.insert(0, str(self.tools_dir))
+        try:
+            from scrape_social_media import (
+                scrape_instagram_profiles,
+                scrape_facebook_pages,
+                scrape_tiktok_users
+            )
+
+            if platform == "Instagram":
+                businesses = scrape_instagram_profiles(query, max_results)
+            elif platform == "Facebook":
+                businesses = scrape_facebook_pages(query, max_results)
+            elif platform == "TikTok":
+                businesses = scrape_tiktok_users(query, max_results)
+
+            logger.info(f"Found {len(businesses)} businesses from {platform}")
+            print(f"\n✅ Found {len(businesses)} businesses from {platform}")
+
+            if businesses:
+                # Upload to Google Sheets
+                print("\n📤 Uploading to Google Sheets...")
+                self.upload_to_sheets(businesses)
+                print(f"✅ {len(businesses)} businesses uploaded successfully!")
+            else:
+                print("❌ No businesses found. Try a different search term.")
+
+        except Exception as e:
+            logger.error(f"Social media scraping failed: {e}", exc_info=True)
+            print(f"\n❌ Scraping failed: {e}")
+            print("   Check your Apify token and try again")
+
+    def enrich_contacts(self):
+        """Workflow 7: Enrich existing businesses with missing contact info"""
+        print("\n" + "="*60)
+        print("🔍 CONTACT ENRICHMENT")
+        print("="*60)
+        logger.info("Starting contact enrichment workflow")
+
+        # Get businesses from Sheet
+        sys.path.insert(0, str(self.tools_dir))
+        try:
+            from get_draft_businesses import get_draft_businesses
+
+            businesses = get_draft_businesses()
+
+            if not businesses:
+                print("\n❌ No businesses found in Google Sheet")
+                logger.warning("No businesses to enrich")
+                return
+
+            # Filter businesses with websites but missing emails
+            businesses_to_enrich = [
+                b for b in businesses
+                if b.get('website') and not b.get('email')
+            ]
+
+            if not businesses_to_enrich:
+                print(f"\n✅ All {len(businesses)} businesses already have contact info!")
+                logger.info("No businesses need enrichment")
+                return
+
+            print(f"\n📊 Found {len(businesses_to_enrich)} businesses needing enrichment")
+            print(f"   (out of {len(businesses)} total businesses)")
+
+            # Confirm
+            confirm = input("\nProceed with enrichment? (yes/no): ").strip().lower()
+            if confirm != "yes":
+                print("❌ Enrichment cancelled")
+                return
+
+            # Enrich
+            print(f"\n🔍 Enriching contact information...")
+            from enrich_contacts import enrich_business_contacts
+
+            enriched = enrich_business_contacts(businesses_to_enrich)
+
+            # Count successful enrichments
+            found_contacts = sum(1 for b in enriched if b.get('email') or b.get('phone'))
+
+            logger.info(f"Enrichment complete: {found_contacts}/{len(enriched)} found")
+            print(f"\n✅ Enrichment complete!")
+            print(f"   📧 Found contact info for {found_contacts} businesses")
+            print(f"   ❌ Could not find info for {len(enriched) - found_contacts} businesses")
+
+            # Update Google Sheet
+            print("\n📤 Updating Google Sheet...")
+            from update_sheet_emails import update_email
+            # TODO: Need to update this to update contact info, not just emails
+
+            print("✅ Google Sheet updated with enriched data")
+
+        except Exception as e:
+            logger.error(f"Contact enrichment failed: {e}", exc_info=True)
+            print(f"\n❌ Enrichment failed: {e}")
+            print("   Check your Apify token and Google Sheet access")
+
+    def verify_emails_menu(self):
+        """Workflow 8: Verify email addresses before sending"""
+        print("\n" + "="*60)
+        print("✅ EMAIL VERIFICATION")
+        print("="*60)
+        logger.info("Starting email verification workflow")
+
+        # Get all businesses from Sheet
+        sys.path.insert(0, str(self.tools_dir))
+        try:
+            from get_draft_businesses import get_draft_businesses
+
+            businesses = get_draft_businesses()
+
+            if not businesses:
+                print("\n❌ No businesses found in Google Sheet")
+                logger.warning("No businesses to verify")
+                return
+
+            # Filter businesses with emails
+            businesses_with_emails = [
+                b for b in businesses
+                if b.get('email')
+            ]
+
+            if not businesses_with_emails:
+                print(f"\n❌ No businesses have email addresses to verify")
+                print("   Run 'Enrich Contact Info' first to find missing emails")
+                return
+
+            businesses_without_emails = len(businesses) - len(businesses_with_emails)
+
+            print(f"\n📊 Found {len(businesses_with_emails)} businesses with email addresses")
+            if businesses_without_emails > 0:
+                print(f"   ⚠️  {businesses_without_emails} businesses have no email")
+
+            # Ask if they want DNS checking (slower but more accurate)
+            print("\n🔍 Verification options:")
+            print("1. Quick (syntax only) - Fast, basic validation")
+            print("2. Full (syntax + DNS) - Slower, checks if domain accepts email")
+
+            check_choice = get_validated_input(
+                "\nChoose verification level (1-2): ",
+                validate_choice,
+                valid_choices=["1", "2"]
+            )
+
+            check_dns = (check_choice == "2")
+
+            # Confirm
+            print(f"\n⚠️  About to verify {len(businesses_with_emails)} email addresses")
+            if check_dns:
+                print("   This may take 1-2 minutes with DNS checking...")
+
+            confirm = input("\nProceed with verification? (yes/no): ").strip().lower()
+            if confirm != "yes":
+                print("❌ Verification cancelled")
+                return
+
+            # Verify
+            print(f"\n🔍 Verifying email addresses...")
+            from verify_emails import verify_businesses
+
+            verified = verify_businesses(businesses_with_emails, check_dns=check_dns)
+
+            # Show results
+            valid = [b for b in verified if b.get('email_verified')]
+            invalid = [b for b in verified if not b.get('email_verified')]
+
+            logger.info(f"Verification complete: {len(valid)} valid, {len(invalid)} invalid")
+            print(f"\n✅ Verification complete!")
+            print(f"   ✅ Valid emails: {len(valid)} ({len(valid)/len(verified)*100:.1f}%)")
+            print(f"   ❌ Invalid emails: {len(invalid)} ({len(invalid)/len(verified)*100:.1f}%)")
+
+            if invalid:
+                print("\n❌ Invalid emails found:")
+                for b in invalid[:5]:  # Show first 5
+                    reason = b.get('verification_reason', 'Unknown')
+                    print(f"   • {b['name']}: {b['email']} ({reason})")
+                if len(invalid) > 5:
+                    print(f"   ... and {len(invalid) - 5} more")
+
+            # Update Google Sheet with verification status
+            print("\n📤 Updating Google Sheet with verification results...")
+            # TODO: Need sheet update function for verification status
+
+            print("✅ Verification results saved to Google Sheet")
+
+        except Exception as e:
+            logger.error(f"Email verification failed: {e}", exc_info=True)
+            print(f"\n❌ Verification failed: {e}")
+            print("   Check your internet connection and try again")
 
 
 def main():

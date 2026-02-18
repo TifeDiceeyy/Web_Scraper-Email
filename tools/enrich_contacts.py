@@ -98,13 +98,27 @@ def enrich_business_contacts(businesses, max_per_business=5):
                 matching_business['phone'] = phones[0]  # Use first phone
                 matching_business['all_phones'] = phones[:max_per_business]
 
-        print(f"\n✅ Enriched {enriched_count} businesses with contact data!")
+        if enriched_count > 0:
+            print(f"\n✅ Enriched {enriched_count} businesses with contact data!")
+        else:
+            print(f"\n⚠️  No new contact data found")
+            print("💡 Possible reasons:")
+            print("   • Websites blocked the scraper (403/403 errors)")
+            print("   • Websites don't have visible contact info")
+            print("   • Contact forms instead of direct emails/phones")
+            print("\n💡 Tips:")
+            print("   • Try smaller, local business websites")
+            print("   • Look for businesses with simple HTML sites")
+            print("   • Avoid large corporate websites (they block scrapers)")
 
         return businesses
 
     except Exception as e:
         print(f"\n❌ Error during contact enrichment: {e}")
-        print("💡 Tip: Check your APIFY_TOKEN and try again")
+        print("💡 Common issues:")
+        print("   • APIFY_TOKEN not set or invalid")
+        print("   • Network connectivity problems")
+        print("   • Websites blocking automated scraping")
         return businesses
 
 

@@ -7,6 +7,7 @@ Strategy: Discovery-focused, ask about problems, offer broad help
 import os
 import sys
 import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -31,7 +32,7 @@ def validate_api_key():
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((errors.ClientError, errors.ServerError))
+    retry=retry_if_exception_type((google_exceptions.GoogleAPIError, Exception))
 )
 def call_gemini_api(client, prompt):
     """
@@ -53,11 +54,8 @@ def call_gemini_api(client, prompt):
             contents=prompt
         )
         return response
-    except errors.ClientError as e:
-        print(f"⚠️  Gemini API Client Error: {e}")
-        raise
-    except errors.ServerError as e:
-        print(f"⚠️  Gemini API Server Error (retrying...): {e}")
+    except google_exceptions.GoogleAPIError as e:
+        print(f"⚠️  Gemini API Error (retrying...): {e}")
         raise
     except Exception as e:
         print(f"❌ Unexpected error calling Gemini API: {e}")

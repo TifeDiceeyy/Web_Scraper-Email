@@ -17,6 +17,7 @@ __pycache__/
 
 # Google credentials
 credentials.json
+credentials.json.*
 new_credetials.json
 token.pickle
 token.json

@@ -118,6 +118,8 @@ def scrape_with_apify(business_type, location, max_results):
         run_input = {
             "searchStringsArray": [f"{business_type} in {location}"],
             "maxCrawledPlacesPerSearch": max_results,
+            "locationQuery": location,  # Center search on this location
+            "maxDistanceRangeKm": 50,   # Search within 50km radius
         }
 
         print("\n⏳ Running Apify Actor (this may take 1-2 minutes)...")

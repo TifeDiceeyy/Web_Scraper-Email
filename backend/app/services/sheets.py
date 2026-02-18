@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 # Add tools directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../"))
 
-from tools.upload_to_sheets import upload_to_sheets
+from tools.upload_to_sheets import upload_businesses
 from tools.get_draft_businesses import get_draft_businesses as get_draft
-from tools.update_sheet_emails import update_sheet_emails
+from tools.update_sheet_emails import update_email
 from app.models import Campaign, UserSettings
 from app.core.security import decrypt_value
 
@@ -65,7 +65,7 @@ class SheetsService:
         os.environ["GOOGLE_SPREADSHEET_ID"] = campaign.google_sheet_id
 
         try:
-            upload_to_sheets(businesses)
+            upload_businesses(businesses)
 
             # Update campaign total_businesses count
             campaign.total_businesses = len(businesses)
@@ -133,7 +133,9 @@ class SheetsService:
         os.environ["GOOGLE_SPREADSHEET_ID"] = campaign.google_sheet_id
 
         try:
-            update_sheet_emails(emails)
+            # Update each email individually
+            for email in emails:
+                update_email(email['row'], email['subject'], email['body'])
             return True
         finally:
             if original_sheet_id:
